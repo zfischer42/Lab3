@@ -20,6 +20,10 @@ module top_tb;
 
     wire [6:0] seg;
     wire [3:0] anode;
+    
+    integer sec_count = 0;
+    integer exp_sec = 0;
+    integer exp_min = 0;
 
     // =====================
     // Instantiate DUT
@@ -47,13 +51,6 @@ module top_tb;
     initial clk = 0;
     always #(CLK_PERIOD/2) clk = ~clk;
 
-    // Hold a signal for N seconds
-    task hold_seconds;
-        input integer seconds;
-        begin
-            #(seconds * 1_000_000_000);
-        end
-    endtask
 
     // =====================
     // Test sequence
@@ -72,11 +69,8 @@ module top_tb;
         $display("=== TEST START ===");
         $display("No inputs applied, running stopwatch...");
 
-        // Run for 10 seconds
-        hold_seconds(3);
 
-        $display("=== TEST END ===");
-        $finish;
+
     end
 
     // =====================
@@ -103,20 +97,17 @@ module top_tb;
 
     end
 
-    integer sec_count = 0;
-    integer exp_sec = 0;
-    integer exp_min = 0;
 
     always @(posedge dut.en_1hz) begin
         // Expected counter
-        exp_sec++;
+        exp_sec = exp_sec + 1;
         if (exp_sec == 60) begin
             exp_sec = 0;
-            exp_min++;
+            exp_min = exp_min + 1;
         end
 
         // expected counter
-        sec_count++;
+        sec_count = sec_count + 1;
         if (sec_count == TEST_MIN*60 + TEST_SEC) begin
             $display("=== TEST END: %0d stopwatch seconds ===", sec_count);
             $finish;
