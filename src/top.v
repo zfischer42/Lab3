@@ -9,10 +9,13 @@ module top (
     input wire select,          // select switch (0/1)
 
     output reg [6:0]  seg,      // 7 segment display output
-    output reg [3:0]  anode     // Selector for anode
+    output reg [3:0] anode     // Selector for anode
 );
+    reg [6:0] seg_raw;
     reg [3:0] MinL, MinR, SecL, SecR;
     reg [3:0] display;
+    
+    reg [1:0] display_digit = 0;
 
     wire en_1hz;
     wire en_2hz;
@@ -32,7 +35,7 @@ module top (
     );
 
     // We need integers so we can assign them without nonblocking
-    integer newSecR, newSecL, newMinR, newMinL;
+    reg [3:0] newSecR, newSecL, newMinR, newMinL;
 
     // Create a clock divider 
     // 1 HZ, 2 Hz, 10 Hz (blinking), 400 Hz (display update)
@@ -43,9 +46,6 @@ module top (
             SecL <= 0;
             SecR <= 0;
             
-            anode   <= 4'b1000;     
-            display <= 0;
-            seg     <= 7'b1111110; 
         end else if (!pause) begin
             
             // STOPWATCH MODE
@@ -116,40 +116,83 @@ module top (
                 end
             end
         end
-
-        // DISPLAY
-        if (en_400hz) begin
-            // Set display based on anode, set next anode
-            if (anode == 4'b1000) begin
-                display <= MinL;
-                anode   <= 4'b0100;
-            end else if (anode == 4'b0100) begin
-                display <= MinR;
-                anode   <= 4'b0010;
-            end else if (anode == 4'b0010) begin
-                display <= SecL;
-                anode   <= 4'b0001;
-            end else if (anode == 4'b0001) begin
-                display <= SecR; 
-                anode   <= 4'b1000;
-            end
-        
-            // Convert display to segments
-            case (display)
-                0: seg = 7'b1111110;
-                1: seg = 7'b0110000;
-                2: seg = 7'b1101101;
-                3: seg = 7'b1111001;
-                4: seg = 7'b0110011;
-                5: seg = 7'b1011011;
-                6: seg = 7'b1011111;
-                7: seg = 7'b1110000;
-                8: seg = 7'b1111111;
-                9: seg = 7'b1110011;
-                default: seg = 7'b1111111; // default to full display
-            endcase
-        end
     end
 
 
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            display_digit <= 0;
+        else if (en_400hz)
+            display_digit <= display_digit + 1;
+    end
+        
+    reg blink_state;
+
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            blink_state <= 0;
+        else if (en_10hz)
+            blink_state <= ~blink_state;
+    end
+    
+    // If adjust select and 10hz
+    
+    always @(*) begin
+        case (display_digit)
+            2'b00: begin
+                anode = 4'b0111; 
+                if (blink_state && adjust && ~select) begin
+                    display = 10;
+                end else begin
+                    display = MinL;
+                end
+            end
+             2'b01: begin
+                anode = 4'b1011;
+                if (blink_state && adjust && ~select) begin
+                    display = 10;
+                end else begin
+                    display = MinR;
+                end
+
+            end
+             2'b10: begin
+                anode = 4'b1101;
+                if (blink_state && adjust && select) begin
+                    display = 10;
+                end else begin
+                    display = SecL;
+                end
+            end
+            2'b11: begin
+                anode = 4'b1110;
+                if (blink_state && adjust && select) begin
+                    display = 10;
+                end else begin
+                    display = SecR;
+                end
+            end
+        endcase
+    end
+    
+    // Cathode patterns of the 7-segment LED display 
+    always @(*)
+        begin
+            case(display)
+            4'b0000: seg = 7'b0000001; // "0"     
+            4'b0001: seg = 7'b1001111; // "1" 
+            4'b0010: seg = 7'b0010010; // "2" 
+            4'b0011: seg = 7'b0000110; // "3" 
+            4'b0100: seg = 7'b1001100; // "4" 
+            4'b0101: seg = 7'b0100100; // "5" 
+            4'b0110: seg = 7'b0100000; // "6" 
+            4'b0111: seg = 7'b0001111; // "7" 
+            4'b1000: seg = 7'b0000000; // "8"     
+            4'b1001: seg = 7'b0000100; // "9" 
+            4'b1010: seg = 7'b1111111; // "OFF"
+            default: seg = 7'b0000001; // "0"
+        endcase
+    end
+
+    
 endmodule

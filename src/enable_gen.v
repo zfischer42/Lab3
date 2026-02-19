@@ -1,3 +1,4 @@
+//`define SIM
 module enable_gen (
     input  wire clk_100mhz,
     input  wire reset,
@@ -10,14 +11,14 @@ module enable_gen (
 
 `ifdef SIM
     localparam integer DIV_1HZ   = 10;
-    localparam integer DIV_2HZ   = 5;
+    localparam integer DIV_2HZ   = 20;
     localparam integer DIV_10HZ  = 2;
-    localparam integer DIV_400HZ = 1;
+    localparam integer DIV_400HZ = 5;
 `else
     localparam integer DIV_1HZ   = 100_000_000;
     localparam integer DIV_2HZ   = 50_000_000;
     localparam integer DIV_10HZ  = 10_000_000;
-    localparam integer DIV_400HZ = 250_000;
+    localparam integer DIV_400HZ = 50_000;
 `endif
 
     reg [$clog2(DIV_1HZ)  :0] cnt_1hz;

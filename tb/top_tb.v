@@ -58,8 +58,8 @@ module top_tb;
     initial begin
         // Initialize inputs
         reset  = 1;
-        pause  = 1;
-        adjust = 1;
+        pause  = 0;
+        adjust = 0;
         select = 0;
 
         // Hold reset for 100 ns
@@ -67,9 +67,7 @@ module top_tb;
         reset = 0;
 
         $display("=== TEST START ===");
-        $display("No inputs applied, running stopwatch...");
-
-
+        $display("No inputs applied, running stopwatch...");        
 
     end
 
@@ -82,6 +80,7 @@ module top_tb;
 
 
     always @(posedge dut.en_2hz) begin
+    
         // $display(
         //     "T=%0t | %0d%0d:%0d%0d",
         //     $time,
